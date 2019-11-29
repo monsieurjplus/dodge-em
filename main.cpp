@@ -340,9 +340,9 @@ void movePlayer(Player * player, Game game, Controls controls)
         playerInVerticalOpen = false;
     }
 
-    if (player->controlByAI == true && (playerInHorizontalOpen == true || playerInVerticalOpen == true)) {
-        std::cout << "horizontal: " << playerInHorizontalOpen << " - vertical: " << playerInVerticalOpen << std::endl;
-    }
+    // if (player->controlByAI == true && (playerInHorizontalOpen == true || playerInVerticalOpen == true)) {
+    //     std::cout << "horizontal: " << playerInHorizontalOpen << " - vertical: " << playerInVerticalOpen << std::endl;
+    // }
 
     bool playerCanGoToInternalCircuit;
     if (player->circuit >= 0.f && player->circuit <= 2.f) {
@@ -685,13 +685,13 @@ void defenderAiEngine(Player * collectorPlayer, Player * defenderPlayer)
         defenderPlayer->aiPrediction.activeStrategy = true;
 
         if (collectorPlayer->circuit > defenderPlayer->circuit) {
-            std::cout << "next move is internal" << std::endl;
-            defenderPlayer->aiPrediction.nextCircuit           = defenderPlayer->circuit;
+            // std::cout << "next move is internal" << std::endl;
+            defenderPlayer->aiPrediction.nextCircuit           = defenderPlayer->circuit + 1;
             defenderPlayer->aiPrediction.nextCircuitIsInternal = true;
             defenderPlayer->aiPrediction.nextCircuitIsExternal = false; 
         } else {
-            std::cout << "next move is external" << std::endl;
-            defenderPlayer->aiPrediction.nextCircuit = defenderPlayer->circuit--;
+            // std::cout << "next move is external" << std::endl;
+            defenderPlayer->aiPrediction.nextCircuit           = defenderPlayer->circuit - 1;
             defenderPlayer->aiPrediction.nextCircuitIsInternal = false;
             defenderPlayer->aiPrediction.nextCircuitIsExternal = true; 
         }
