@@ -13,6 +13,7 @@ typedef struct s_Game {
 typedef struct s_Controls {
     uint8_t BUTTON_A;
     uint8_t BUTTON_B;
+    uint8_t BUTTON_ACCEL;
 } Controls;
 
 typedef struct s_Map {
@@ -35,6 +36,7 @@ typedef struct s_Player {
     uint16_t posX;
     uint16_t posY;
     float speed;
+    float accel;
     uint16_t angle;
 
     uint16_t height;
@@ -60,6 +62,7 @@ void initPlayer1(Player * player, Map map, bool isHuman, bool useJoystick, uint8
     player->posX                  = map.internalPadding;
     player->posY                  = 310.f;
     player->speed                 = 1;
+    player->accel                 = 1;
     player->height                = 90.f;
     player->width                 = 90.f;
     player->angle                 = 0.f;
@@ -90,6 +93,7 @@ void initPlayer2(Player * player, Map map, bool isHuman, bool useJoystick, uint8
     player->posX                  = 835.f;
     player->posY                  = 725.f;
     player->speed                 = 1;
+    player->accel                 = 1;
     player->height                = 90.f;
     player->width                 = 90.f;
     player->angle                 = 0.f;
@@ -100,8 +104,11 @@ void initPlayer2(Player * player, Map map, bool isHuman, bool useJoystick, uint8
 
     if (isHuman == true) {
         player->useJoystick = useJoystick;
-        player->joystickId  = joystickId;
         player->controlByAI = false;
+
+        if (player->useJoystick == true) {    
+            player->joystickId  = joystickId;
+        }
     } else {
         player->controlByAI = true;
         struct s_AiPrediction playerAiPrediction;
@@ -275,16 +282,33 @@ bool isButtonBPressed(Player player, Controls controls)
     );
 }
 
+bool activeAccel(Player player, Controls controls)
+{
+    return (
+        player.controlByAI == false &&
+        (
+            (player.useJoystick == true && sf::Joystick::isButtonPressed(player.joystickId, controls.BUTTON_ACCEL)) ||
+            (player.useJoystick == false && sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+        )
+    ); 
+}
+
 void movePlayer(Player * player, Game game, Controls controls)
 {
     sf::Vector2f playerPosition = player->sprite.getPosition();
 
-    if (player->controlByAI == true) {
-        if (player->aiPrediction.activeStrategy == true) {
-            std::cout << "nextCircuit: " << player->aiPrediction.nextCircuit << " - internal: " << player->aiPrediction.nextCircuitIsInternal << " - external: " << player->aiPrediction.nextCircuitIsExternal << std::endl;
-        } else {
-            std::cout << "no strategy" << std::endl;
-        }
+    // if (player->controlByAI == true) {
+    //     if (player->aiPrediction.activeStrategy == true) {
+    //         std::cout << "nextCircuit: " << player->aiPrediction.nextCircuit << " - internal: " << player->aiPrediction.nextCircuitIsInternal << " - external: " << player->aiPrediction.nextCircuitIsExternal << std::endl;
+    //     } else {
+    //         std::cout << "no strategy" << std::endl;
+    //     }
+    // }
+
+    if (activeAccel(* player, controls) == true) {
+        player->accel = 1.5f;
+    } else {
+        player->accel = 1;
     }
 
     if (player->movingFromCircuit == true) {
@@ -314,6 +338,10 @@ void movePlayer(Player * player, Game game, Controls controls)
         playerInVerticalOpen = true;
     } else {
         playerInVerticalOpen = false;
+    }
+
+    if (player->controlByAI == true && (playerInHorizontalOpen == true || playerInVerticalOpen == true)) {
+        std::cout << "horizontal: " << playerInHorizontalOpen << " - vertical: " << playerInVerticalOpen << std::endl;
     }
 
     bool playerCanGoToInternalCircuit;
@@ -366,7 +394,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 if (
                     (
                         isButtonAPressed(* player, controls) ||
-                        (player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
+                        (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
                     )
                     &&
                     playerCanGoToInternalCircuit == true
@@ -381,7 +409,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 } else if (
                     (
                         isButtonBPressed(* player, controls) ||
-                        (player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
+                        (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
                     )
                     &&
                     playerCanGoToExternalCircuit == true
@@ -396,7 +424,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 }
             }
 
-            player->sprite.move(sf::Vector2f(0.f, -(player->speed * game.speedFactor)));
+            player->sprite.move(sf::Vector2f(0.f, -(player->accel * player->speed * game.speedFactor)));
         }
 
         if (doRotation == true) {
@@ -446,7 +474,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 if (
                     (
                         isButtonAPressed(* player, controls) ||
-                        (player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
+                        (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
                     )
                     &&
                     playerCanGoToInternalCircuit == true
@@ -461,7 +489,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 } else if (
                     (
                         isButtonBPressed(* player, controls) ||
-                        (player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
+                        (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
                     )
                     &&
                     playerCanGoToExternalCircuit == true
@@ -476,7 +504,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 }
             }
 
-            player->sprite.move(sf::Vector2f(player->speed * game.speedFactor, 0.f));
+            player->sprite.move(sf::Vector2f(player->accel * player->speed * game.speedFactor, 0.f));
         }
 
         if (doRotation == true) {
@@ -505,7 +533,6 @@ void movePlayer(Player * player, Game game, Controls controls)
             if (player->leftToRight == true) {
                 player->sprite.setPosition(sf::Vector2f(925.f - player->width - 110, 925.f - 100));
             } else {
-                std::cout << ""
                 player->sprite.setPosition(sf::Vector2f(105.f + player->width, 925.f - 100 - player->height));
             }
         } else if (player->circuit == 2.f && playerPosition.y > (930 - 105 - 105)) {
@@ -527,7 +554,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 if (
                     (
                         isButtonAPressed(* player, controls) ||
-                        (player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
+                        (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
                     )
                     &&
                     playerCanGoToInternalCircuit == true
@@ -542,7 +569,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 } else if (
                     (
                         isButtonBPressed(* player, controls) ||
-                        (player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
+                        (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
                     )   
                     &&
                     playerCanGoToExternalCircuit == true
@@ -557,7 +584,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 }
             }
 
-            player->sprite.move(sf::Vector2f(0.f, player->speed * game.speedFactor));
+            player->sprite.move(sf::Vector2f(0.f, player->accel * player->speed * game.speedFactor));
         }
 
         if (doRotation == true) {
@@ -607,7 +634,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 if (
                     (
                         isButtonAPressed(* player, controls) ||
-                        (player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
+                        (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
                     )   
                     &&
                     playerCanGoToInternalCircuit == true
@@ -619,7 +646,14 @@ void movePlayer(Player * player, Game game, Controls controls)
                     }
                     player->circuit++;
                     player->movingFromCircuit = true;
-                } else if (isButtonBPressed(* player, controls) && playerCanGoToExternalCircuit == true) {
+                } else if (
+                    (
+                        isButtonBPressed(* player, controls) ||
+                        (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
+                    ) 
+                    &&
+                    playerCanGoToExternalCircuit == true
+                ) {
                     if (player->leftToRight == true) {
                         player->sprite.move(sf::Vector2f(0.f, 105.f));
                     } else {
@@ -630,7 +664,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                 }
             }
 
-            player->sprite.move(sf::Vector2f(-(player->speed * game.speedFactor), 0.f));
+            player->sprite.move(sf::Vector2f(-(player->accel * player->speed * game.speedFactor), 0.f));
         }
 
         if (doRotation == true) {
@@ -705,8 +739,9 @@ int main()
 
     struct s_Controls controls;
     if (useJoystick == true) {
-        controls.BUTTON_A = 1;
-        controls.BUTTON_B = 0;
+        controls.BUTTON_A     = 1;
+        controls.BUTTON_B     = 0;
+        controls.BUTTON_ACCEL = 2;
     }
 
 
@@ -725,7 +760,8 @@ int main()
         // erreur...
     }
     player1.sprite.setTexture(player1.texture);
-    initPlayer1(&player1, map, false, useJoystick, joystickId);
+    initPlayer1(&player1, map, true, useJoystick, joystickId);
+    //initPlayer1(&player1, map, false, useJoystick, joystickId);
 
 
     // Player 2 init
@@ -735,7 +771,8 @@ int main()
         // erreur...
     }
     player2.sprite.setTexture(player2.texture);
-    initPlayer2(&player2, map, true, false, 0);
+    initPlayer2(&player2, map, false, false, 0);
+    //initPlayer2(&player2, map, true, false, 0);
 
 
     while (window.isOpen())
@@ -747,7 +784,10 @@ int main()
                 window.close();
         }
 
-        defenderAiEngine(&player1, &player2);
+        if (player2.controlByAI == true) {
+            defenderAiEngine(&player1, &player2);
+        }
+
         movePlayer(&player1, game, controls);
         movePlayer(&player2, game, controls);
 
