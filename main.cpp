@@ -8,12 +8,42 @@ typedef struct s_Game {
     uint8_t speedFactor;
     uint16_t screenHeight;
     uint16_t screenWidth;
+    bool isPaused;
 } Game;
 
+typedef struct s_ControlsEvents {
+    int8_t keyReleased;
+} ControlsEvents;
+
+/**
+ * 
+ * Switch Pro Controller Mapping
+ *   0 = B  
+ *   1 = A
+ *   2 = Y
+ *   3 = X
+ *   4 = L
+ *   5 = R
+ *   6 = ZL
+ *   7 = ZR
+ *   8 = -
+ *   9 = +
+ *  10 = L3
+ *  11 = R3
+ *  12 = Home
+ *  13 = Capture
+ * 
+ *  Joy PovX = D-Pad Axis X
+ *  Joy PovY = D-Pad Axis Y
+ *  Joy X = Left joystick Axis X
+ *  Joy Y = Left joystick Axis Y
+ *  Joy U = Right joystick Axis X
+ *  Joy V = Right joystick Axis Y
+ * 
+ */
 typedef struct s_Controls {
-    uint8_t BUTTON_A;
-    uint8_t BUTTON_B;
-    uint8_t BUTTON_ACCEL;
+    uint8_t ACCEL;
+    uint8_t START;
 } Controls;
 
 typedef struct s_Map {
@@ -55,7 +85,6 @@ typedef struct s_Player {
     bool controlByAI;
     AiPrediction aiPrediction;
 } Player;
-
 
 void initPlayer1(Player * player, Map map, bool isHuman, bool useJoystick, uint8_t joystickId)
 {
@@ -260,26 +289,44 @@ void drawMap(sf::RenderWindow * window, Map map)
     window->draw(mapCenter);
 }
 
-bool isButtonAPressed(Player player, Controls controls)
+bool isRightDirectionPressed(Player player, Controls controls)
 {
     return (
         player.controlByAI == false &&
         (
-            (player.useJoystick == true && sf::Joystick::isButtonPressed(player.joystickId, controls.BUTTON_A)) ||
-            (player.useJoystick == false && sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+            (player.useJoystick == true && sf::Joystick::getAxisPosition(player.joystickId, sf::Joystick::PovX) == 100) ||
+            (player.useJoystick == false && sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
         )
     );
 }
 
-bool isButtonBPressed(Player player, Controls controls)
+bool isLeftDirectionPressed(Player player, Controls controls)
 {
     return (
         player.controlByAI == false &&
         (
-            (player.useJoystick == true && sf::Joystick::isButtonPressed(player.joystickId, controls.BUTTON_B)) ||
-            (player.useJoystick == false && sf::Keyboard::isKeyPressed(sf::Keyboard::B))
+            (player.useJoystick == true && sf::Joystick::getAxisPosition(player.joystickId, sf::Joystick::PovX) == -100) ||
+            (player.useJoystick == false && sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
         )
     );
+}
+
+void checkPauseControl(Game * game, Player player, Controls controls, ControlsEvents controlsEvents)
+{
+    // controlsEvents.keyReleased == controls.START
+    if (
+        player.controlByAI == false &&
+        (
+            (player.useJoystick == true && sf::Joystick::isButtonPressed(player.joystickId, controls.START)) ||
+            (player.useJoystick == false && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
+        )
+    ) {
+        if (game->isPaused == true) {
+            game->isPaused = false;
+        } else {
+            game->isPaused = true;
+        }
+    }
 }
 
 bool activeAccel(Player player, Controls controls)
@@ -287,7 +334,7 @@ bool activeAccel(Player player, Controls controls)
     return (
         player.controlByAI == false &&
         (
-            (player.useJoystick == true && sf::Joystick::isButtonPressed(player.joystickId, controls.BUTTON_ACCEL)) ||
+            (player.useJoystick == true && sf::Joystick::isButtonPressed(player.joystickId, controls.ACCEL)) ||
             (player.useJoystick == false && sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
         )
     ); 
@@ -340,10 +387,6 @@ void movePlayer(Player * player, Game game, Controls controls)
         playerInVerticalOpen = false;
     }
 
-    // if (player->controlByAI == true && (playerInHorizontalOpen == true || playerInVerticalOpen == true)) {
-    //     std::cout << "horizontal: " << playerInHorizontalOpen << " - vertical: " << playerInVerticalOpen << std::endl;
-    // }
-
     bool playerCanGoToInternalCircuit;
     if (player->circuit >= 0.f && player->circuit <= 2.f) {
         playerCanGoToInternalCircuit = true;
@@ -393,7 +436,7 @@ void movePlayer(Player * player, Game game, Controls controls)
             if (player->movingFromCircuit == false && playerInVerticalOpen == true) {
                 if (
                     (
-                        isButtonAPressed(* player, controls) ||
+                        isRightDirectionPressed(* player, controls) ||
                         (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
                     )
                     &&
@@ -408,7 +451,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                     player->movingFromCircuit = true;
                 } else if (
                     (
-                        isButtonBPressed(* player, controls) ||
+                        isLeftDirectionPressed(* player, controls) ||
                         (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
                     )
                     &&
@@ -473,7 +516,7 @@ void movePlayer(Player * player, Game game, Controls controls)
             if (player->movingFromCircuit == false && playerInHorizontalOpen == true) {
                 if (
                     (
-                        isButtonAPressed(* player, controls) ||
+                        isRightDirectionPressed(* player, controls) ||
                         (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
                     )
                     &&
@@ -488,7 +531,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                     player->movingFromCircuit = true;
                 } else if (
                     (
-                        isButtonBPressed(* player, controls) ||
+                        isLeftDirectionPressed(* player, controls) ||
                         (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
                     )
                     &&
@@ -553,7 +596,7 @@ void movePlayer(Player * player, Game game, Controls controls)
             if (player->movingFromCircuit == false && playerInVerticalOpen == true) {
                 if (
                     (
-                        isButtonAPressed(* player, controls) ||
+                        isRightDirectionPressed(* player, controls) ||
                         (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
                     )
                     &&
@@ -568,7 +611,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                     player->movingFromCircuit = true;
                 } else if (
                     (
-                        isButtonBPressed(* player, controls) ||
+                        isLeftDirectionPressed(* player, controls) ||
                         (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
                     )   
                     &&
@@ -633,7 +676,7 @@ void movePlayer(Player * player, Game game, Controls controls)
             if (player->movingFromCircuit == false && playerInHorizontalOpen == true) {
                 if (
                     (
-                        isButtonAPressed(* player, controls) ||
+                        isRightDirectionPressed(* player, controls) ||
                         (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsInternal == true)
                     )   
                     &&
@@ -648,7 +691,7 @@ void movePlayer(Player * player, Game game, Controls controls)
                     player->movingFromCircuit = true;
                 } else if (
                     (
-                        isButtonBPressed(* player, controls) ||
+                        isLeftDirectionPressed(* player, controls) ||
                         (player->controlByAI == true && player->aiPrediction.activeStrategy == true && player->aiPrediction.nextCircuitIsExternal == true)
                     ) 
                     &&
@@ -708,6 +751,7 @@ int main()
     game.speedFactor  = 6;
     game.screenHeight = 930.f;
     game.screenWidth  = 930.f;
+    game.isPaused     = true;
 
     struct s_Map map;
     map.internalPadding     = 5.f;
@@ -739,12 +783,12 @@ int main()
 
     struct s_Controls controls;
     if (useJoystick == true) {
-        controls.BUTTON_A     = 1;
-        controls.BUTTON_B     = 0;
-        controls.BUTTON_ACCEL = 2;
+        controls.ACCEL = 1;
+        controls.START = 9;
     }
 
-
+    struct s_ControlsEvents controlsEvents;
+    controlsEvents.keyReleased = -1;
 
     sf::Font font;
     if (!font.loadFromFile("fonts/Raleway-Regular.ttf"))
@@ -761,7 +805,6 @@ int main()
     }
     player1.sprite.setTexture(player1.texture);
     initPlayer1(&player1, map, true, useJoystick, joystickId);
-    //initPlayer1(&player1, map, false, useJoystick, joystickId);
 
 
     // Player 2 init
@@ -772,24 +815,41 @@ int main()
     }
     player2.sprite.setTexture(player2.texture);
     initPlayer2(&player2, map, false, false, 0);
-    //initPlayer2(&player2, map, true, false, 0);
 
 
     while (window.isOpen())
     {
+        if (player1.useJoystick == true || player2.useJoystick == true) {
+            sf::Joystick::update();
+        }
+
         sf::Event event;
         while (window.pollEvent(event))
         {
-            if (event.type == sf::Event::Closed)
+            if (event.type == sf::Event::Closed) {
                 window.close();
+            }
+
+            if (event.type == sf::Event::JoystickButtonReleased)
+            {
+                controlsEvents.keyReleased = event.joystickButton.button;
+                std::cout << "joystick button pressed!" << std::endl;
+                std::cout << "joystick id: " << event.joystickButton.joystickId << std::endl;
+                std::cout << "button: " << event.joystickButton.button << std::endl;
+            }
         }
 
-        if (player2.controlByAI == true) {
-            defenderAiEngine(&player1, &player2);
-        }
+        checkPauseControl(&game, player1, controls, controlsEvents);
+        checkPauseControl(&game, player2, controls, controlsEvents);
+        
+        if (game.isPaused == false) {
+            if (player2.controlByAI == true) {
+                defenderAiEngine(&player1, &player2);
+            }
 
-        movePlayer(&player1, game, controls);
-        movePlayer(&player2, game, controls);
+            movePlayer(&player1, game, controls);
+            movePlayer(&player2, game, controls);
+        }
 
         window.clear();
         window.draw(player1.sprite);
