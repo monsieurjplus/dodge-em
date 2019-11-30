@@ -82,9 +82,22 @@ typedef struct s_Player {
     bool useJoystick;
     uint8_t joystickId;
 
+    uint8_t collectedItems;
+
     bool controlByAI;
     AiPrediction aiPrediction;
 } Player;
+
+typedef struct s_Item {
+    uint16_t posX;
+    uint16_t posY;
+    uint16_t height;
+    uint16_t width;
+
+    sf::Sprite sprite;
+
+    bool isCollected;
+} Item;
 
 void initPlayer1(Player * player, Map map, bool isHuman, bool useJoystick, uint8_t joystickId)
 {
@@ -146,6 +159,258 @@ void initPlayer2(Player * player, Map map, bool isHuman, bool useJoystick, uint8
     }
 
     player->sprite.setPosition(sf::Vector2f(player->posX, player->posY));
+}
+
+void initItems(std::vector<s_Item> * items) 
+{
+    std::vector<std::pair<uint16_t, uint16_t> > itemsPositions;
+
+    // Circuit 0 (external)
+
+    // Top left corner
+    std::pair<uint16_t, uint16_t> itemTL(30, 35);
+    itemsPositions.push_back(itemTL);
+
+    // Left vertical
+    std::pair<uint16_t, uint16_t> itemLV1(30, 140);
+    itemsPositions.push_back(itemLV1);
+
+    std::pair<uint16_t, uint16_t> itemLV2(30, 245);
+    itemsPositions.push_back(itemLV2);
+
+    std::pair<uint16_t, uint16_t> itemLV3(30, 550);
+    itemsPositions.push_back(itemLV3);
+
+    std::pair<uint16_t, uint16_t> itemLV4(30, 655);
+    itemsPositions.push_back(itemLV4);
+
+    std::pair<uint16_t, uint16_t> itemLV5(30, 760);
+    itemsPositions.push_back(itemLV5);
+
+    // Bottom left corner
+    std::pair<uint16_t, uint16_t> itemBL(30, 865);
+    itemsPositions.push_back(itemBL);
+
+    // Top horizontal
+    std::pair<uint16_t, uint16_t> itemTH1(135, 35);
+    itemsPositions.push_back(itemTH1);
+
+    std::pair<uint16_t, uint16_t> itemTH2(240, 35);
+    itemsPositions.push_back(itemTH2);
+
+    std::pair<uint16_t, uint16_t> itemTH3(345, 35);
+    itemsPositions.push_back(itemTH3);
+
+    std::pair<uint16_t, uint16_t> itemTH4(550, 35);
+    itemsPositions.push_back(itemTH4);
+
+    std::pair<uint16_t, uint16_t> itemTH5(655, 35);
+    itemsPositions.push_back(itemTH5);
+
+    std::pair<uint16_t, uint16_t> itemTH6(760, 35);
+    itemsPositions.push_back(itemTH6);
+
+    // Bottom horizontal
+    std::pair<uint16_t, uint16_t> itemBH1(135, 865);
+    itemsPositions.push_back(itemBH1);
+
+    std::pair<uint16_t, uint16_t> itemBH2(240, 865);
+    itemsPositions.push_back(itemBH2);
+
+    std::pair<uint16_t, uint16_t> itemBH3(345, 865);
+    itemsPositions.push_back(itemBH3);
+
+    std::pair<uint16_t, uint16_t> itemBH4(550, 865);
+    itemsPositions.push_back(itemBH4);
+
+    std::pair<uint16_t, uint16_t> itemBH5(655, 865);
+    itemsPositions.push_back(itemBH5);
+
+    std::pair<uint16_t, uint16_t> itemBH6(760, 865);
+    itemsPositions.push_back(itemBH6);
+
+    // Top right corner
+    std::pair<uint16_t, uint16_t> itemTR(865, 35);
+    itemsPositions.push_back(itemTR);
+
+    // Right vertical
+    std::pair<uint16_t, uint16_t> itemRV1(865, 140);
+    itemsPositions.push_back(itemRV1);
+
+    std::pair<uint16_t, uint16_t> itemRV2(865, 245);
+    itemsPositions.push_back(itemRV2);
+
+    std::pair<uint16_t, uint16_t> itemRV3(865, 350);
+    itemsPositions.push_back(itemRV3);
+
+    std::pair<uint16_t, uint16_t> itemRV4(865, 550);
+    itemsPositions.push_back(itemRV4);
+
+    std::pair<uint16_t, uint16_t> itemRV5(865, 655);
+    itemsPositions.push_back(itemRV5);
+
+    std::pair<uint16_t, uint16_t> itemRV6(865, 760);
+    itemsPositions.push_back(itemRV6);
+
+    // Bottom right corner
+    std::pair<uint16_t, uint16_t> itemBR(865, 865);
+    itemsPositions.push_back(itemBR);
+
+
+    // Circuit 1
+
+    // Top left corner
+    std::pair<uint16_t, uint16_t> itemC1TL(135, 140);
+    itemsPositions.push_back(itemC1TL);
+
+    // Left vertical
+    std::pair<uint16_t, uint16_t> itemC1LV1(135, 245);
+    itemsPositions.push_back(itemC1LV1);
+
+    std::pair<uint16_t, uint16_t> itemC1LV2(135, 350);
+    itemsPositions.push_back(itemC1LV2);
+
+    std::pair<uint16_t, uint16_t> itemC1LV3(135, 550);
+    itemsPositions.push_back(itemC1LV3);
+
+    std::pair<uint16_t, uint16_t> itemC1LV4(135, 655);
+    itemsPositions.push_back(itemC1LV4);
+
+    // Bottom left corner
+    std::pair<uint16_t, uint16_t> itemC1BL(135, 760);
+    itemsPositions.push_back(itemC1BL);
+
+    // Top horizontal
+    std::pair<uint16_t, uint16_t> itemC1TH1(240, 140);
+    itemsPositions.push_back(itemC1TH1);
+
+    std::pair<uint16_t, uint16_t> itemC1TH2(345, 140);
+    itemsPositions.push_back(itemC1TH2);
+
+    std::pair<uint16_t, uint16_t> itemC1TH3(550, 140);
+    itemsPositions.push_back(itemC1TH3);
+
+    std::pair<uint16_t, uint16_t> itemC1TH4(655, 140);
+    itemsPositions.push_back(itemC1TH4);
+
+    // Top right corner
+    std::pair<uint16_t, uint16_t> itemC1TR(760, 140);
+    itemsPositions.push_back(itemC1TR);
+
+    // Bottom horizontal
+    std::pair<uint16_t, uint16_t> itemC1BH1(240, 760);
+    itemsPositions.push_back(itemC1BH1);
+
+    std::pair<uint16_t, uint16_t> itemC1BH2(345, 760);
+    itemsPositions.push_back(itemC1BH2);
+
+    std::pair<uint16_t, uint16_t> itemC1BH3(550, 760);
+    itemsPositions.push_back(itemC1BH3);
+
+    std::pair<uint16_t, uint16_t> itemC1BH4(655, 760);
+    itemsPositions.push_back(itemC1BH4);
+
+    // Right vertical
+    std::pair<uint16_t, uint16_t> itemC1RV1(760, 245);
+    itemsPositions.push_back(itemC1RV1);
+
+    std::pair<uint16_t, uint16_t> itemC1RV2(760, 350);
+    itemsPositions.push_back(itemC1RV2);
+
+    std::pair<uint16_t, uint16_t> itemC1RV3(760, 550);
+    itemsPositions.push_back(itemC1RV3);
+
+    std::pair<uint16_t, uint16_t> itemC1RV4(760, 655);
+    itemsPositions.push_back(itemC1RV4);
+
+    // Bottom right corner
+    std::pair<uint16_t, uint16_t> itemC1BR(760, 760);
+    itemsPositions.push_back(itemC1BR);
+
+
+    // Circuit 2
+
+    // Top left corner
+    std::pair<uint16_t, uint16_t> itemC2TL(240, 245);
+    itemsPositions.push_back(itemC2TL);
+
+    // Left vertical
+    std::pair<uint16_t, uint16_t> itemC2LV1(240, 350);
+    itemsPositions.push_back(itemC2LV1);
+
+    std::pair<uint16_t, uint16_t> itemC2LV2(240, 550);
+    itemsPositions.push_back(itemC2LV2);
+
+    // Bottom left corner
+    std::pair<uint16_t, uint16_t> itemC2BL(240, 655);
+    itemsPositions.push_back(itemC2BL);
+
+    // Top horizontal
+    std::pair<uint16_t, uint16_t> itemC2TH1(345, 245);
+    itemsPositions.push_back(itemC2TH1);
+
+    std::pair<uint16_t, uint16_t> itemC2TH2(550, 245);
+    itemsPositions.push_back(itemC2TH2);
+
+    // Top right corner
+    std::pair<uint16_t, uint16_t> itemC2TR(655, 245);
+    itemsPositions.push_back(itemC2TR);
+
+    // Bottom horizontal
+    std::pair<uint16_t, uint16_t> itemC2BH1(345, 655);
+    itemsPositions.push_back(itemC2BH1);
+
+    std::pair<uint16_t, uint16_t> itemC2BH2(550, 655);
+    itemsPositions.push_back(itemC2BH2);
+
+    // Right vertical
+    std::pair<uint16_t, uint16_t> itemC2RV1(655, 350);
+    itemsPositions.push_back(itemC2RV1);
+
+    std::pair<uint16_t, uint16_t> itemC2RV2(655, 550);
+    itemsPositions.push_back(itemC2RV2);
+
+    // Bottom right corner
+    std::pair<uint16_t, uint16_t> itemC2BR(655, 655);
+    itemsPositions.push_back(itemC2BR);
+
+
+    // Circuit 3
+
+    // Top left corner
+    std::pair<uint16_t, uint16_t> itemC3TL(345, 350);
+    itemsPositions.push_back(itemC3TL);
+
+    // Bottom left corner
+    std::pair<uint16_t, uint16_t> itemC3BL(345, 550);
+    itemsPositions.push_back(itemC3BL);
+
+    // Top right corner
+    std::pair<uint16_t, uint16_t> itemC3TR(550, 350);
+    itemsPositions.push_back(itemC3TR);
+
+    // Bottom right corner
+    std::pair<uint16_t, uint16_t> itemC3BR(550, 550);
+    itemsPositions.push_back(itemC3BR);
+
+    for (std::size_t itemIndex = 0; itemIndex < itemsPositions.size(); ++itemIndex) {
+        sf::Texture itemTexture;
+        if (!itemTexture.loadFromFile("gfx/barrel.png"))
+        {
+            // erreur...
+        }
+
+        s_Item item;
+        item.height      = 30;
+        item.width       = 30;
+        item.posX        = itemsPositions[itemIndex].first;
+        item.posY        = itemsPositions[itemIndex].second;
+        item.isCollected = false;
+        item.sprite.setTexture(itemTexture);
+        item.sprite.setPosition(sf::Vector2f(itemsPositions[itemIndex].first, itemsPositions[itemIndex].second));
+
+        items->push_back(item);
+    }
 }
 
 void drawMap(sf::RenderWindow * window, Map map)
@@ -289,6 +554,15 @@ void drawMap(sf::RenderWindow * window, Map map)
     window->draw(mapCenter);
 }
 
+void drawItems(sf::RenderWindow * window, std::vector<s_Item> items)
+{
+    for (std::size_t itemIndex = 0; itemIndex < items.size(); ++itemIndex) {
+        if (items[itemIndex].isCollected == false) {
+            window->draw(items[itemIndex].sprite);
+        }
+    }
+}
+
 bool isRightDirectionPressed(Player player, Controls controls)
 {
     return (
@@ -340,6 +614,26 @@ bool activeAccel(Player player, Controls controls)
     ); 
 }
 
+void collideItems(Player * collectorPlayer, std::vector<s_Item> * items)
+{
+    for (std::size_t itemIndex = 0; itemIndex < items->size(); ++itemIndex) {
+        if (items->at(itemIndex).isCollected == true) {
+            continue;
+        }
+
+        sf::FloatRect playerBoundingBox = collectorPlayer->sprite.getGlobalBounds();
+        sf::FloatRect itemBoundingBox   = items->at(itemIndex).sprite.getGlobalBounds();
+
+        if (playerBoundingBox.intersects(itemBoundingBox)) {
+            std::cout << "COLLIDE ITEM " << itemIndex << std::endl;
+
+            items->at(itemIndex).isCollected = true;
+            collectorPlayer->collectedItems++;
+            break;
+        }
+    }
+}
+
 void movePlayer(Player * player, Game game, Controls controls)
 {
     sf::Vector2f playerPosition = player->sprite.getPosition();
@@ -353,7 +647,7 @@ void movePlayer(Player * player, Game game, Controls controls)
     // }
 
     if (activeAccel(* player, controls) == true) {
-        player->accel = 1.5f;
+        player->accel = 2.f;
     } else {
         player->accel = 1;
     }
@@ -720,6 +1014,10 @@ void movePlayer(Player * player, Game game, Controls controls)
             }
         }
     }
+
+    playerPosition = player->sprite.getPosition();
+    player->posX   = playerPosition.x;
+    player->posY   = playerPosition.y;
 }
 
 void defenderAiEngine(Player * collectorPlayer, Player * defenderPlayer)
@@ -805,6 +1103,7 @@ int main()
     }
     player1.sprite.setTexture(player1.texture);
     initPlayer1(&player1, map, true, useJoystick, joystickId);
+    //initPlayer1(&player1, map, true, false, 0);
 
 
     // Player 2 init
@@ -814,8 +1113,11 @@ int main()
         // erreur...
     }
     player2.sprite.setTexture(player2.texture);
+    //initPlayer2(&player2, map, true, useJoystick, joystickId);
     initPlayer2(&player2, map, false, false, 0);
 
+    std::vector<s_Item> items;
+    initItems(&items);
 
     while (window.isOpen())
     {
@@ -843,6 +1145,8 @@ int main()
         checkPauseControl(&game, player2, controls, controlsEvents);
         
         if (game.isPaused == false) {
+            collideItems(&player1, &items);
+
             if (player2.controlByAI == true) {
                 defenderAiEngine(&player1, &player2);
             }
@@ -852,10 +1156,11 @@ int main()
         }
 
         window.clear();
+        
+        drawMap(&window, map);
+        drawItems(&window, items);
         window.draw(player1.sprite);
         window.draw(player2.sprite);
-
-        drawMap(&window, map);
 
         window.display();
     }
