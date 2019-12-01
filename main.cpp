@@ -12,9 +12,9 @@ typedef struct s_Game {
 } Game;
 
 typedef struct s_ControlsEvents {
-    int8_t keyReleased;
+    int8_t joystickButtonReleased;
+    sf::Event::KeyEvent keyReleased;
 } ControlsEvents;
-
 /**
  * 
  * Switch Pro Controller Mapping
@@ -83,6 +83,8 @@ typedef struct s_Player {
     uint8_t joystickId;
 
     uint8_t collectedItems;
+    uint8_t lives;
+    bool hasLost;
 
     bool controlByAI;
     AiPrediction aiPrediction;
@@ -99,7 +101,7 @@ typedef struct s_Item {
     bool isCollected;
 } Item;
 
-void initPlayer1(Player * player, Map map, bool isHuman, bool useJoystick, uint8_t joystickId)
+void initPlayer1(Player * player, Map map, bool isHuman, bool useJoystick, uint8_t joystickId, bool firstInit)
 {
     player->posX                  = map.internalPadding;
     player->posY                  = 310.f;
@@ -120,6 +122,13 @@ void initPlayer1(Player * player, Map map, bool isHuman, bool useJoystick, uint8
         if (player->useJoystick == true) {
             player->joystickId = joystickId;
         }
+
+        player->hasLost = false;
+        if (firstInit == true) {
+            player->lives = 3;
+        } else {
+            player->lives--;
+        }
     } else {
         player->controlByAI = true;
         struct s_AiPrediction playerAiPrediction;
@@ -127,6 +136,7 @@ void initPlayer1(Player * player, Map map, bool isHuman, bool useJoystick, uint8
         player->aiPrediction              = playerAiPrediction;
     }
 
+    player->sprite.setRotation(0);
     player->sprite.setPosition(sf::Vector2f(player->posX, player->posY));
 }
 
@@ -158,11 +168,14 @@ void initPlayer2(Player * player, Map map, bool isHuman, bool useJoystick, uint8
         player->aiPrediction              = playerAiPrediction;
     }
 
+    player->sprite.setRotation(0);
     player->sprite.setPosition(sf::Vector2f(player->posX, player->posY));
 }
 
 void initItems(std::vector<s_Item> * items) 
 {
+    items->empty();
+
     std::vector<std::pair<uint16_t, uint16_t> > itemsPositions;
 
     // Circuit 0 (external)
@@ -585,16 +598,25 @@ bool isLeftDirectionPressed(Player player, Controls controls)
     );
 }
 
-void checkPauseControl(Game * game, Player player, Controls controls, ControlsEvents controlsEvents)
+void checkPauseControl(Game * game, Player collectorPlayer, Player defenderPlayer, Controls controls, ControlsEvents controlsEvents)
 {
-    // controlsEvents.keyReleased == controls.START
     if (
-        player.controlByAI == false &&
         (
-            (player.useJoystick == true && sf::Joystick::isButtonPressed(player.joystickId, controls.START)) ||
-            (player.useJoystick == false && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
+            collectorPlayer.controlByAI == false &&
+            (
+                (collectorPlayer.useJoystick == true && sf::Joystick::isButtonPressed(collectorPlayer.joystickId, controls.START)) ||
+                (collectorPlayer.useJoystick == false && controlsEvents.keyReleased.code == sf::Keyboard::Enter)
+            )
+        ) ||
+        (
+            defenderPlayer.controlByAI == false &&
+            (
+                (defenderPlayer.useJoystick == true && sf::Joystick::isButtonPressed(defenderPlayer.joystickId, controls.START)) ||
+                (defenderPlayer.useJoystick == false && controlsEvents.keyReleased.code == sf::Keyboard::Enter)
+            )
         )
     ) {
+        std::cout << "change pause" << std::endl;
         if (game->isPaused == true) {
             game->isPaused = false;
         } else {
@@ -631,6 +653,17 @@ void collideItems(Player * collectorPlayer, std::vector<s_Item> * items)
             collectorPlayer->collectedItems++;
             break;
         }
+    }
+}
+
+void collideBetweenPlayers(Player * collectorPlayer, Player * defenderPlayer)
+{
+    sf::FloatRect collectorPlayerBoundingBox = collectorPlayer->sprite.getGlobalBounds();
+    sf::FloatRect defenderPlayerBoundingBox  = defenderPlayer->sprite.getGlobalBounds();
+
+    if (collectorPlayerBoundingBox.intersects(defenderPlayerBoundingBox)) {
+        collectorPlayer->hasLost = true;
+        std::cout << "PLAYER 2 WINS!" << std::endl;
     }
 }
 
@@ -1061,7 +1094,7 @@ int main()
 
 
     // Create the window
-    sf::RenderWindow window(sf::VideoMode(game.screenWidth, game.screenHeight), "SFML works!");
+    sf::RenderWindow window(sf::VideoMode(game.screenWidth, game.screenHeight), "Dodge'em");
     window.setFramerateLimit(60);
 
 
@@ -1086,7 +1119,7 @@ int main()
     }
 
     struct s_ControlsEvents controlsEvents;
-    controlsEvents.keyReleased = -1;
+    controlsEvents.joystickButtonReleased = -1;
 
     sf::Font font;
     if (!font.loadFromFile("fonts/Raleway-Regular.ttf"))
@@ -1102,7 +1135,7 @@ int main()
         // erreur...
     }
     player1.sprite.setTexture(player1.texture);
-    initPlayer1(&player1, map, true, useJoystick, joystickId);
+    initPlayer1(&player1, map, true, useJoystick, joystickId, true);
     //initPlayer1(&player1, map, true, false, 0);
 
 
@@ -1134,18 +1167,31 @@ int main()
 
             if (event.type == sf::Event::JoystickButtonReleased)
             {
-                controlsEvents.keyReleased = event.joystickButton.button;
-                std::cout << "joystick button pressed!" << std::endl;
+                controlsEvents.joystickButtonReleased = event.joystickButton.button;
+                std::cout << "joystick button released!" << std::endl;
                 std::cout << "joystick id: " << event.joystickButton.joystickId << std::endl;
                 std::cout << "button: " << event.joystickButton.button << std::endl;
             }
-        }
 
-        checkPauseControl(&game, player1, controls, controlsEvents);
-        checkPauseControl(&game, player2, controls, controlsEvents);
+            if (event.type == sf::Event::KeyReleased)
+            {
+                if (event.key.code == sf::Keyboard::Enter) {
+                    if (player1.hasLost == false) {
+                        controlsEvents.keyReleased = event.key;
+                        checkPauseControl(&game, player1, player2, controls, controlsEvents);
+                    } else {
+                        initPlayer1(&player1, map, true, useJoystick, joystickId, false);
+                        initPlayer2(&player2, map, false, false, 0);
+                        initItems(&items);
+                        game.isPaused = true;
+                    }
+                }
+            }
+        }
         
-        if (game.isPaused == false) {
+        if (game.isPaused == false && player1.hasLost == false) {
             collideItems(&player1, &items);
+            collideBetweenPlayers(&player1, &player2);
 
             if (player2.controlByAI == true) {
                 defenderAiEngine(&player1, &player2);
@@ -1153,7 +1199,7 @@ int main()
 
             movePlayer(&player1, game, controls);
             movePlayer(&player2, game, controls);
-        }
+        } 
 
         window.clear();
         
@@ -1161,6 +1207,17 @@ int main()
         drawItems(&window, items);
         window.draw(player1.sprite);
         window.draw(player2.sprite);
+
+        if (player1.hasLost == true) {
+            sf::Text player2WinsText;
+            player2WinsText.setFont(font);
+            player2WinsText.setString("Player 2 Wins!");
+            player2WinsText.setCharacterSize(60);
+            player2WinsText.setFillColor(sf::Color::Red);
+            player2WinsText.setPosition(sf::Vector2f(280, 400));
+
+            window.draw(player2WinsText);
+        }
 
         window.display();
     }
